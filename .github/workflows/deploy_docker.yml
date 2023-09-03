@@ -26,6 +26,6 @@ jobs:
     - name: Build and Push Docker image
       run: |
         docker buildx build \
-          --platform linux/amd64,linux/arm64 \
+          --platform linux/amd64 \
           -t ${{ secrets.DOCKERHUB_USERNAME }}/gpt-discord-bot:latest \
           --push .
