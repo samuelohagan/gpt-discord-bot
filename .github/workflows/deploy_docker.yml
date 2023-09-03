@@ -24,8 +24,8 @@ jobs:
           --build-arg YOUR_DISCORD_CLIENT_ID=${{ secrets.YOUR_DISCORD_CLIENT_ID }} \
           --build-arg YOUR_OPENAI_API_KEY=${{ secrets.YOUR_OPENAI_API_KEY }} \
           --build-arg YOUR_ALLOWED_SERVER_IDS=${{ secrets.YOUR_ALLOWED_SERVER_IDS }} \
-          -t ${{ secrets.DOCKERHUB_USERNAME }}/your-image-name:latest
+          -t ${{ secrets.DOCKERHUB_USERNAME }}/gpt-discord-bot:latest
 
     - name: Push Docker image to Docker Hub
       run: |
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/your-image-name:latest
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/gpt-discord-bot:latest
