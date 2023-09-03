@@ -1,11 +1,10 @@
 import discord
 from discord import Message as DiscordMessage
 import logging
-from src.base import Message, Conversation
+from src.base import Message
 from src.constants import (
     BOT_INVITE_URL,
     DISCORD_BOT_TOKEN,
-    EXAMPLE_CONVOS,
     ACTIVATE_THREAD_PREFX,
     MAX_THREAD_MESSAGES,
     SECONDS_DELAY_RECEIVING_MSG,
@@ -19,7 +18,7 @@ from src.utils import (
     discord_message_to_message,
 )
 from src import completion
-from src.completion import generate_completion_response, process_response
+from src.completion import generate_completion_response, generate_completion_response_summarize, process_response
 
 logging.basicConfig(
     format="[%(asctime)s] [%(filename)s:%(lineno)d] %(message)s", level=logging.INFO
@@ -35,17 +34,6 @@ tree = discord.app_commands.CommandTree(client)
 @client.event
 async def on_ready():
     logger.info(f"We have logged in as {client.user}. Invite URL: {BOT_INVITE_URL}")
-    completion.MY_BOT_NAME = client.user.name
-    completion.MY_BOT_EXAMPLE_CONVOS = []
-    for c in EXAMPLE_CONVOS:
-        messages = []
-        for m in c.messages:
-            if m.user == "Lenard":
-                messages.append(Message(user=client.user.name, text=m.text))
-            else:
-                messages.append(m)
-        completion.MY_BOT_EXAMPLE_CONVOS.append(Conversation(messages=messages))
-    await tree.sync()
 
 
 # /chat message:
@@ -66,7 +54,7 @@ async def chat_command(int: discord.Interaction, message: str):
             return
 
         user = int.user
-        logger.info(f"Chat command by {user} {message[:20]}")
+        logger.info(f"Chatclient. command by {user} {message[:20]}")
         try:
            
 
@@ -97,11 +85,11 @@ async def chat_command(int: discord.Interaction, message: str):
             # fetch completion
             messages = [Message(user=user.name, text=message)]
             response_data = await generate_completion_response(
-                messages=messages, user=user
+                messages=messages
             )
             # send the result
             await process_response(
-                user=user, thread=thread, response_data=response_data
+                thread=thread, response_data=response_data
             )
     except Exception as e:
         logger.exception(e)
@@ -160,9 +148,8 @@ async def on_message(message: DiscordMessage):
         logger.info(
             f"Thread message to process - {message.author}: {message.content[:50]} - {thread.name} {thread.jump_url}"
         )
-
         channel_messages = [
-            discord_message_to_message(message)
+            discord_message_to_message(message, message.author == client.user)
             async for message in thread.history(limit=MAX_THREAD_MESSAGES)
         ]
         channel_messages = [x for x in channel_messages if x is not None]
@@ -170,8 +157,8 @@ async def on_message(message: DiscordMessage):
 
         # generate the response
         async with thread.typing():
-            response_data = await generate_completion_response(
-                messages=channel_messages, user=message.author
+            response_data = await generate_completion_response_summarize(
+                messages=channel_messages
             )
 
         if is_last_message_stale(
@@ -184,7 +171,7 @@ async def on_message(message: DiscordMessage):
 
         # send response
         await process_response(
-            user=message.author, thread=thread, response_data=response_data
+            thread=thread, response_data=response_data
         )
     except Exception as e:
         logger.exception(e)

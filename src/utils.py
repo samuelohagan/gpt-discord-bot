@@ -9,10 +9,52 @@ from discord import Message as DiscordMessage
 from typing import Optional, List
 import discord
 
+import tiktoken
+
+def encoding_getter(encoding_type: str):
+    """
+    Returns the appropriate encoding based on the given encoding type (either an encoding string or a model name).
+    """
+    if "k_base" in encoding_type:
+        return tiktoken.get_encoding(encoding_type)
+    else:
+        return tiktoken.encoding_for_model(encoding_type)
+
+def tokenizer(string: str, encoding_type: str) -> list:
+    """
+    Returns the tokens in a text string using the specified encoding.
+    """
+    encoding = encoding_getter(encoding_type)
+    tokens = encoding.encode(string)
+    return tokens
+
 from src.constants import MAX_CHARS_PER_REPLY_MSG, INACTIVATE_THREAD_PREFIX
 
+def token_counter(string: str, encoding_type: str) -> int:
+    """
+    Returns the number of tokens in a text string using the specified encoding.
+    """
+    num_tokens = len(tokenizer(string, encoding_type))
+    return num_tokens
 
-def discord_message_to_message(message: DiscordMessage) -> Optional[Message]:
+def get_last_n_tokens(messages: List[Message], n: int) -> List[Message]:
+    tokens_so_far = 0
+    selected_messages = []
+    for message in reversed(messages):
+        msg_tokens = token_counter(message.text, "gpt-3.5-turbo")
+        if tokens_so_far + msg_tokens <= n:
+            selected_messages.append(message)
+            tokens_so_far += msg_tokens
+        else:
+            break
+    return selected_messages
+
+
+def discord_message_to_message(message: DiscordMessage, is_bot: bool) -> Optional[Message]:
+    if is_bot:
+        current_user = 'assistant'
+    else:
+        current_user = 'user'
     if (
         message.type == discord.MessageType.thread_starter_message
         and message.reference.cached_message
@@ -20,11 +62,11 @@ def discord_message_to_message(message: DiscordMessage) -> Optional[Message]:
         and len(message.reference.cached_message.embeds[0].fields) > 0
     ):
         field = message.reference.cached_message.embeds[0].fields[0]
-        if field.value:
-            return Message(user=field.name, text=field.value)
+        logger.info(f"Thread starter message: {field}")
     else:
         if message.content:
-            return Message(user=message.author.name, text=message.content)
+            text = f"{message.author.name}: {message.content}"
+            return Message(user=current_user, text=text)
     return None
 
 
