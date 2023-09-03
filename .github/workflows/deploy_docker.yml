@@ -23,7 +23,7 @@ jobs:
     - name: Boot builder instance
       run: docker buildx create --use
 
-    - name: Build Docker image
+    - name: Build and Push Docker image
       run: |
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
@@ -32,8 +32,4 @@ jobs:
           --build-arg YOUR_OPENAI_API_KEY=${{ secrets.YOUR_OPENAI_API_KEY }} \
           --build-arg YOUR_ALLOWED_SERVER_IDS=${{ secrets.YOUR_ALLOWED_SERVER_IDS }} \
           -t ${{ secrets.DOCKERHUB_USERNAME }}/gpt-discord-bot:latest \
-          --load .
-
-    - name: Push Docker image to Docker Hub
-      run: |
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/gpt-discord-bot:latest
+          --push .
