@@ -25,7 +25,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker buildx build . \
+        docker buildx build \
           --platform linux/amd64,linux/arm64 \
           --build-arg YOUR_DISCORD_BOT_TOKEN=${{ secrets.YOUR_DISCORD_BOT_TOKEN }} \
           --build-arg YOUR_DISCORD_CLIENT_ID=${{ secrets.YOUR_DISCORD_CLIENT_ID }} \
